@@ -1,0 +1,72 @@
+# XcodeGen spec. Regenerate the Xcode project after changing this file:
+#   xcodegen generate
+name: Carpool
+options:
+  bundleIdPrefix: dev.puroid
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    # Set your team in Xcode (Signing & Capabilities) or put its ID here.
+    DEVELOPMENT_TEAM: 7UB2F629U2
+targets:
+  Carpool:
+    type: application
+    platform: iOS
+    sources:
+      - Carpool
+      - Shared
+    dependencies:
+      - target: LyricsWidget
+    info:
+      path: Carpool/Info.plist
+      properties:
+        CFBundleDisplayName: Carpool
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        UIBackgroundModes: [audio, location]
+        NSLocationWhenInUseUsageDescription: Carpool uses your location only to keep running in the background while you drive, so the lyrics on your lock screen and CarPlay keep moving. Your location is never stored or sent anywhere.
+        CFBundleURLTypes:
+          - CFBundleURLName: spotify-login
+            CFBundleURLSchemes: [lyricscar]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.puroid.lyricscar
+        CODE_SIGN_ENTITLEMENTS: Carpool/Carpool.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_PREVIEWS: YES
+  LyricsWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - LyricsWidget
+      - Shared
+    info:
+      path: LyricsWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Carpool Lyrics
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.puroid.lyricscar.widget
+        CODE_SIGN_ENTITLEMENTS: LyricsWidget/LyricsWidget.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_PREVIEWS: YES
+schemes:
+  Carpool:
+    build:
+      targets:
+        Carpool: all
+    run:
+      config: Debug
+    archive:
+      config: Release
