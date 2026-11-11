@@ -59,7 +59,29 @@ final class SpotifyClient {
 
     enum Command: String { case play, pause, next, previous }
 
-    func send(_ command: Command) async throws {
+    struct Device: Decodable {
+        let id: String?
+        let name: String
+        let type: String
+        let is_active: Bool
+    }
+
+    /// The devices Spotify can play on right now (your phone, a speaker, the web player…).
+    func devices() async throws -> [Device] {
+        struct Response: Decodable { let devices: [Device] }
+        let token = try await auth.accessToken()
+        var req = URLRequest(url: URL(string: "https://api.spotify.com/v1/me/player/devices")!)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 10
+        let (data, response) = try await URLSession.shared.data(for: req)
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard code == 200 else { throw SpotifyError.http(code, String(data: data, encoding: .utf8) ?? "") }
+        return try JSONDecoder().decode(Response.self, from: data).devices
+    }
+
+    /// Sends a playback command. With `deviceID`, it targets that device even if Spotify
+    /// no longer considers it "active" (which happens soon after pausing).
+    func send(_ command: Command, deviceID: String? = nil) async throws {
         let (method, path): (String, String) = switch command {
         case .play: ("PUT", "play")
         case .pause: ("PUT", "pause")
@@ -67,7 +89,9 @@ final class SpotifyClient {
         case .previous: ("POST", "previous")
         }
         let token = try await auth.accessToken()
-        var req = URLRequest(url: URL(string: "https://api.spotify.com/v1/me/player/\(path)")!)
+        var c = URLComponents(string: "https://api.spotify.com/v1/me/player/\(path)")!
+        if let deviceID { c.queryItems = [.init(name: "device_id", value: deviceID)] }
+        var req = URLRequest(url: c.url!)
         req.httpMethod = method
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("0", forHTTPHeaderField: "Content-Length")

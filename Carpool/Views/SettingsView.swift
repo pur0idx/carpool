@@ -19,9 +19,24 @@ struct SettingsView: View {
                         Label("Connected to Spotify", systemImage: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                         if !auth.canControlPlayback {
-                            Text("The widget's play/pause and skip buttons need one more Spotify permission. Tap Disconnect, then Connect Spotify again.")
+                            Text("The widget's play/pause and skip buttons need one more Spotify permission.")
                                 .font(.footnote)
                                 .foregroundStyle(.orange)
+                            Button {
+                                Task {
+                                    loggingIn = true
+                                    loginError = nil
+                                    auth.logout()
+                                    do { try await auth.login() } catch { loginError = error.localizedDescription }
+                                    loggingIn = false
+                                }
+                            } label: {
+                                HStack {
+                                    Text("Reconnect Spotify")
+                                    if loggingIn { Spacer(); ProgressView() }
+                                }
+                            }
+                            .disabled(loggingIn)
                         }
                         Button("Disconnect", role: .destructive) { auth.logout() }
                     } else {

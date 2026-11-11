@@ -123,6 +123,7 @@ final class SpotifyAuth {
                         refreshToken: refresh,
                         expiresAt: Date().addingTimeInterval(response.expires_in),
                         scope: response.scope)
+        log("Spotify connected. Permissions granted: \(response.scope ?? "(Spotify didn't say)")")
     }
 
     /// False if you connected before playback controls were added: reconnect once to enable them.

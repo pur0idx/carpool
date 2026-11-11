@@ -26,6 +26,7 @@ final class DebugLog {
     }
 
     func add(_ text: String) {
+        SharedLog.write(text, from: "app")
         entries.append(Entry(date: Date(), text: text))
         if entries.count > 300 { entries.removeFirst(entries.count - 300) }
         if let data = try? JSONEncoder().encode(entries) {
@@ -34,6 +35,7 @@ final class DebugLog {
     }
 
     func clear() {
+        SharedLog.clear()
         entries = []
         UserDefaults.standard.removeObject(forKey: key)
     }

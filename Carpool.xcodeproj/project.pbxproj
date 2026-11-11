@@ -22,6 +22,8 @@
 		7BADD706B24DDF6F8EEE42A0 /* LyricsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94213C8191A00D58CE678176 /* LyricsEngine.swift */; };
 		833E0114355A40AE746CB410 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05112D2C5F558ED4588FDFB1 /* SettingsView.swift */; };
 		86ABA18187D53F00EEEADDE0 /* PlaybackIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D156847BD0B5ACD6949AC5B /* PlaybackIntents.swift */; };
+		881C51F62F1F9E05FE7978FB /* SharedLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F361699E6D06391D4E679455 /* SharedLog.swift */; };
+		89BD874C42F05CD48065D047 /* SharedLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F361699E6D06391D4E679455 /* SharedLog.swift */; };
 		93B68A53DE1ECF5B570DA427 /* AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142C266A748C8D88C6170E33 /* AppGroup.swift */; };
 		9B4AA14CC89C6CC8EFBBB589 /* LyricsActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B2D9A592A9AACF5C2DBB5C /* LyricsActivityAttributes.swift */; };
 		A8D8840E4AE9B09FC5044FF0 /* LyricsEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02971CFC649FA417233CDB8A /* LyricsEstimator.swift */; };
@@ -93,6 +95,7 @@
 		C6C5D911B1A49F0E6996A5B4 /* LRCParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LRCParser.swift; sourceTree = "<group>"; };
 		CA27975542D88FC3F69D5EC4 /* Carpool.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Carpool.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F18A0E73C10E33B95D8CC0D2 /* SpotifyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyClient.swift; sourceTree = "<group>"; };
+		F361699E6D06391D4E679455 /* SharedLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLog.swift; sourceTree = "<group>"; };
 		F8B2D9A592A9AACF5C2DBB5C /* LyricsActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsActivityAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -181,6 +184,7 @@
 				F8B2D9A592A9AACF5C2DBB5C /* LyricsActivityAttributes.swift */,
 				2D156847BD0B5ACD6949AC5B /* PlaybackIntents.swift */,
 				AE1B977C0D71D3DA9C5307A7 /* RefreshLyricsIntent.swift */,
+				F361699E6D06391D4E679455 /* SharedLog.swift */,
 				A4072B38C1BE9610F24053C7 /* WidgetSnapshot.swift */,
 			);
 			path = Shared;
@@ -318,6 +322,7 @@
 				38B4445D4C2BFB220B4FB848 /* PlaybackIntents.swift in Sources */,
 				7037400C35CBD2A324AC7C84 /* RefreshLyricsIntent.swift in Sources */,
 				833E0114355A40AE746CB410 /* SettingsView.swift in Sources */,
+				89BD874C42F05CD48065D047 /* SharedLog.swift in Sources */,
 				3F69105D42AC2840A79724E3 /* SpotifyAuth.swift in Sources */,
 				57231CED78CF1ED4DB7D6CB8 /* SpotifyClient.swift in Sources */,
 				5720A2C058ED3C11D3FD87F0 /* WidgetSnapshot.swift in Sources */,
@@ -334,6 +339,7 @@
 				B731FBD6F14F9F69860F46D7 /* LyricsLiveActivity.swift in Sources */,
 				86ABA18187D53F00EEEADDE0 /* PlaybackIntents.swift in Sources */,
 				DE25AD2DA9FA4C9F84FC89B4 /* RefreshLyricsIntent.swift in Sources */,
+				881C51F62F1F9E05FE7978FB /* SharedLog.swift in Sources */,
 				B4C4309C279A95CA63FCA746 /* WidgetSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -3,6 +3,12 @@ import SwiftUI
 @main
 struct CarpoolApp: App {
     @State private var engine = LyricsEngine.shared
+
+    init() {
+        // Create the engine right away, even when iOS launches the app in the background just to
+        // run a widget button, so the button has something to talk to.
+        _ = LyricsEngine.shared
+    }
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {

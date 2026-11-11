@@ -103,7 +103,8 @@ final class LyricsEngine {
         activityLead = UserDefaults.standard.object(forKey: "activityLead") as? Double ?? 0.6
         carLayout = CarLayout(rawValue: UserDefaults.standard.string(forKey: "carLayout") ?? "") ?? .next
         carModeOn = liveActivity.isRunning
-        log("App launched\(carModeOn ? " (Live Activity already running)" : "")")
+        log("App launched\(carModeOn ? " (Live Activity already running)" : "")"
+            + " · Spotify: \(auth.isLoggedIn ? (auth.canControlPlayback ? "connected, can control playback" : "connected, NO playback permission") : "not connected")")
 
         liveActivity.onEndedBySystem = { [weak self] in
             guard let self, self.carModeOn else { return }
@@ -114,17 +115,17 @@ final class LyricsEngine {
             }
         }
         // The refresh button on the Live Activity posts this (see RefreshLyricsIntent).
-        // Play/pause and skip buttons on the widget (see PlaybackIntents).
-        NotificationCenter.default.addObserver(forName: .playbackCommand, object: nil, queue: .main) { note in
-            let command = note.object as? String ?? ""
-            Task { @MainActor in await LyricsEngine.shared.handlePlayback(command) }
-        }
-        NotificationCenter.default.addObserver(forName: .refreshLyricsRequested, object: nil, queue: .main) { _ in
-            Task { @MainActor in
+        // Buttons on the widget and Live Activity (see PlaybackIntents / RefreshLyricsIntent).
+        // The button waits until this finishes, so iOS keeps the app awake until Spotify answers.
+        AppCommands.handler = { command in
+            if command == "refresh" {
                 log("Refresh tapped on Live Activity")
                 await LyricsEngine.shared.refresh()
+            } else {
+                await LyricsEngine.shared.handlePlayback(command)
             }
         }
+        AppCommands.listenForWidgetTaps()
     }
 
     // MARK: - Lifecycle
@@ -611,27 +612,62 @@ final class LyricsEngine {
 extension LyricsEngine {
     /// Called by the widget's buttons.
     func handlePlayback(_ command: String) async {
-        guard !isDemo, auth.isLoggedIn else { return }
+        log("Widget button pressed: \(command)")
+        guard !isDemo else { log("Ignored: demo mode is on"); return }
+        guard auth.isLoggedIn else { log("Ignored: not connected to Spotify"); return }
         guard auth.canControlPlayback else {
             message = "Reconnect Spotify in Settings to use the play/pause buttons."
+            log("Ignored: Spotify login is missing the playback permission. Disconnect and connect Spotify again in Settings.")
             return
         }
         let spotifyCommand: SpotifyClient.Command
         switch command {
         case "next": spotifyCommand = .next
         case "previous": spotifyCommand = .previous
-        default: spotifyCommand = (track?.isPlaying ?? false) ? .pause : .play
+        default:
+            // If iOS just launched us for this button we don't know yet whether music is
+            // playing, so ask Spotify before deciding between play and pause.
+            if track == nil, let now = try? await spotify.currentlyPlaying() { setTrack(now) }
+            spotifyCommand = (track?.isPlaying ?? false) ? .pause : .play
+        }
+        // Remember which device is playing, to send "play" back to it later.
+        if let active = try? await spotify.devices().first(where: \.is_active), let id = active.id {
+            lastDeviceID = id
         }
         do {
-            try await spotify.send(spotifyCommand)
+            do {
+                try await spotify.send(spotifyCommand)
+            } catch SpotifyClient.SpotifyError.http(404, let body) where body.contains("NO_ACTIVE_DEVICE") {
+                // After a pause, Spotify soon stops treating your phone as the active player.
+                // Send the command straight to the device we saw playing (or the phone).
+                let devices = (try? await spotify.devices()) ?? []
+                let target = devices.first { $0.id == lastDeviceID }
+                    ?? devices.first { $0.type == "Smartphone" }
+                    ?? devices.first
+                guard let id = target?.id else { throw SpotifyClient.SpotifyError.http(404, body) }
+                log("No active Spotify device; sending \(spotifyCommand.rawValue) to \(target?.name ?? "device")")
+                try await spotify.send(spotifyCommand, deviceID: id)
+            }
             log("Widget button: \(spotifyCommand.rawValue)")
             // Give Spotify a moment, then re-check what's playing.
             try? await Task.sleep(for: .milliseconds(400))
             await refresh()
         } catch {
-            message = error.localizedDescription
-            log("Playback command failed: \(error.localizedDescription)")
+            let text = "\(error.localizedDescription)"
+            message = text.contains("NO_ACTIVE_DEVICE")
+                ? "Spotify isn't playing on any device. Start a song in Spotify first."
+                : text
+            log("Playback command failed: \(text)")
         }
+    }
+}
+
+private var lastDeviceIDKey: String { "lastSpotifyDeviceID" }
+extension LyricsEngine {
+    /// The Spotify device last seen playing (kept across launches).
+    var lastDeviceID: String? {
+        get { UserDefaults.standard.string(forKey: lastDeviceIDKey) }
+        set { UserDefaults.standard.set(newValue, forKey: lastDeviceIDKey) }
     }
 }
 
