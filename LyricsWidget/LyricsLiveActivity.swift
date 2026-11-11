@@ -17,8 +17,9 @@ struct LyricsLiveActivity: Widget {
         ActivityConfiguration(for: LyricsActivityAttributes.self) { context in
             // Lock screen, StandBy, and (via .small) CarPlay + Apple Watch.
             LyricsActivityView(state: context.state)
-                .activityBackgroundTint(context.state.background.color)
-                .activitySystemActionForegroundColor(.white)
+                // Liquid Glass: no tint, so iOS draws its own translucent material.
+                .activityBackgroundTint(context.state.isGlass ? nil : context.state.background.color)
+                .activitySystemActionForegroundColor(context.state.isGlass ? nil : .white)
         } dynamicIsland: { context in
             let s = context.state
             return DynamicIsland {
@@ -140,10 +141,10 @@ struct LyricsActivityView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(state.trackTitle)
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(state.textColor)
                         Text(state.estimated ? "\(state.artist) · ≈ guessed timing" : state.artist)
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundStyle(state.textColor.opacity(0.6))
                     }
                     .lineLimit(1)
                     Spacer(minLength: 4)
@@ -151,10 +152,10 @@ struct LyricsActivityView: View {
                         Image(systemName: "arrow.clockwise")
                             .font(.footnote.weight(.semibold))
                             .frame(width: 30, height: 30)
-                            .background(.white.opacity(0.12), in: .circle)
+                            .background(state.textColor.opacity(0.12), in: .circle)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(state.accent.color)
+                    .foregroundStyle(state.buttonColor)
                 }
                 LyricsWindow(state: state,
                              before: state.linesBefore,
@@ -202,7 +203,7 @@ struct LyricsWindow: View {
                 let isPast = (all.firstIndex(of: line) ?? 0) < ci
                 Text(line.text)
                     .font(isCurrent ? currentFont : otherFont)
-                    .foregroundStyle(.white.opacity(isCurrent ? 1 : (isPast ? 0.35 : 0.5)))
+                    .foregroundStyle(state.textColor.opacity(isCurrent ? 1 : (isPast ? 0.35 : 0.5)))
                     .lineLimit(isCurrent ? (wrapCurrentFully ? nil : currentLineLimit) : 1)
                     .minimumScaleFactor(isCurrent && wrapCurrentFully ? 1 : minScale)
                     .fixedSize(horizontal: false, vertical: isCurrent && wrapCurrentFully)
@@ -223,9 +224,11 @@ struct ArtBackdrop: View {
 
     var body: some View {
         ZStack {
-            state.background.color
-            LinearGradient(colors: [.white.opacity(0.06), .black.opacity(0.25)],
+            if !state.isGlass {
+                state.background.color
+                LinearGradient(colors: [.white.opacity(0.06), .black.opacity(0.25)],
                            startPoint: .top, endPoint: .bottom)
+            }
         }
         .clipped()
     }
@@ -253,4 +256,13 @@ struct ArtBackdrop: View {
 extension LyricsState {
     var linesBefore: Int { carLayout == "three" ? 1 : 0 }
     var linesAfter: Int { carLayout == "single" ? 0 : 1 }
+}
+
+/// Colors that depend on the theme (Settings → Live Activity theme).
+extension LyricsState {
+    var isGlass: Bool { theme == "glass" }
+    /// Liquid Glass adapts to the wallpaper and light/dark mode, so use the system's
+    /// adaptive text color; the colored themes always have a dark background, so white.
+    var textColor: Color { isGlass ? .primary : .white }
+    var buttonColor: Color { isGlass ? .primary : accent.color }
 }

@@ -107,6 +107,29 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker("Theme", selection: $engine.activityTheme) {
+                        ForEach(LyricsEngine.ActivityTheme.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                    if engine.activityTheme == .custom {
+                        ColorPicker("Background color", selection: Binding(
+                            get: { engine.customThemeColor.color },
+                            set: { color in
+                                let c = UIColor(color).resolvedColor(with: .current)
+                                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+                                c.getRed(&r, green: &g, blue: &b, alpha: nil)
+                                engine.customThemeColor = RGB(r: r, g: g, b: b)
+                            }
+                        ), supportsOpacity: false)
+                    }
+                } header: {
+                    Text("Live Activity theme")
+                } footer: {
+                    Text("Album colors: matches each song's cover. Liquid Glass: the iPhone's own see-through look, adapting to your wallpaper and light or dark mode. The Dynamic Island always stays black.")
+                }
+
+                Section {
                     Toggle("Use location to stay running", isOn: $engine.keepAliveWithLocation)
                     NavigationLink("Background log") { DebugLogView() }
                 } header: {

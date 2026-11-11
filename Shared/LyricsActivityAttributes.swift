@@ -28,6 +28,9 @@ struct LyricsActivityAttributes: ActivityAttributes {
         /// Lyrics layout (lock screen, CarPlay): "next" = current + next line (default);
         /// "three" = previous, current and next line; "single" = current line only, biggest.
         var carLayout: String = "next"
+        /// Look of the Live Activity: "album" (album colors), "glass" (iOS Liquid Glass),
+        /// "dark" or "custom" (background = the chosen color, sent in `background`).
+        var theme: String = "album"
     }
 }
 

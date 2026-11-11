@@ -64,6 +64,49 @@ final class LyricsEngine {
         var after: Int { self == .single ? 0 : 1 }
     }
 
+    enum ActivityTheme: String, CaseIterable, Identifiable {
+        case album, glass, dark, custom
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .album: "Album colors"
+            case .glass: "Liquid Glass"
+            case .dark: "Dark"
+            case .custom: "Custom color"
+            }
+        }
+    }
+
+    /// Look of the Live Activity on the lock screen and CarPlay.
+    var activityTheme: ActivityTheme {
+        didSet {
+            UserDefaults.standard.set(activityTheme.rawValue, forKey: "activityTheme")
+            log("Live Activity theme changed to: \(activityTheme.title)")
+            tick()
+        }
+    }
+
+    /// Background for the "Custom color" theme.
+    var customThemeColor: RGB {
+        didSet {
+            if let data = try? JSONEncoder().encode(customThemeColor) {
+                UserDefaults.standard.set(data, forKey: "customThemeColor")
+            }
+            tick()
+        }
+    }
+
+    /// Background and accent for the Live Activity, from the chosen theme.
+    private func themeColors() -> (background: RGB, accent: RGB) {
+        let albumBG = artwork?.background ?? .defaultBackground
+        let albumAccent = artwork?.accent ?? .defaultAccent
+        switch activityTheme {
+        case .album, .glass: return (albumBG, albumAccent)
+        case .dark: return (RGB(r: 0.05, g: 0.05, b: 0.06), albumAccent)
+        case .custom: return (customThemeColor, RGB(r: 1, g: 1, b: 1))
+        }
+    }
+
     /// How the lyrics are laid out in the CarPlay card.
     var carLayout: CarLayout {
         didSet {
@@ -102,6 +145,9 @@ final class LyricsEngine {
         offset = UserDefaults.standard.object(forKey: "lyricsOffset") as? Double ?? 0.3
         activityLead = UserDefaults.standard.object(forKey: "activityLead") as? Double ?? 0.6
         carLayout = CarLayout(rawValue: UserDefaults.standard.string(forKey: "carLayout") ?? "") ?? .next
+        activityTheme = ActivityTheme(rawValue: UserDefaults.standard.string(forKey: "activityTheme") ?? "") ?? .album
+        customThemeColor = UserDefaults.standard.data(forKey: "customThemeColor")
+            .flatMap { try? JSONDecoder().decode(RGB.self, from: $0) } ?? RGB(r: 0.12, g: 0.2, b: 0.45)
         carModeOn = liveActivity.isRunning
         log("App launched\(carModeOn ? " (Live Activity already running)" : "")"
             + " · Spotify: \(auth.isLoggedIn ? (auth.canControlPlayback ? "connected, can control playback" : "connected, NO playback permission") : "not connected")")
@@ -557,15 +603,14 @@ final class LyricsEngine {
 
     private func activityState() -> LiveActivityController.State {
         typealias Line = LyricsActivityAttributes.ContentState.Line
-        let bg = artwork?.background ?? .defaultBackground
-        let accent = artwork?.accent ?? .defaultAccent
+        let (bg, accent) = themeColors()
 
         guard let track else {
             let text = isDemo || auth.isLoggedIn ? "Nothing playing on Spotify" : "Open Carpool to connect Spotify"
             return .init(lines: [Line(id: "status", text: text)], currentID: "status",
                          trackTitle: "Carpool", artist: "", isPlaying: false,
                          artFile: nil, background: bg, accent: accent, estimated: false,
-                         carLayout: carLayout.rawValue)
+                         carLayout: carLayout.rawValue, theme: activityTheme.rawValue)
         }
 
         var window: [Line] = []
@@ -603,7 +648,7 @@ final class LyricsEngine {
                      trackTitle: track.title, artist: track.artist, isPlaying: track.isPlaying,
                      artFile: artwork?.fileName, background: bg, accent: accent,
                      estimated: lyricsStatus == .estimated,
-                     carLayout: carLayout.rawValue)
+                     carLayout: carLayout.rawValue, theme: activityTheme.rawValue)
     }
 }
 
