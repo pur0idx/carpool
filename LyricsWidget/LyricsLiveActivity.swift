@@ -37,8 +37,8 @@ struct LyricsLiveActivity: Widget {
                     .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    LyricsWindow(state: s, before: 0, after: 1,
-                                 currentFont: .system(size: 17, weight: .bold),
+                    LyricsWindow(state: s, before: s.linesBefore, after: s.linesAfter,
+                                 currentFont: .system(size: s.carLayout == "single" ? 19 : 17, weight: .bold),
                                  otherFont: .system(size: 14, weight: .medium))
                         .padding(.horizontal, 4)
                 }
@@ -69,16 +69,16 @@ struct LyricsActivityView: View {
     private func car(before: Int = 0, after: Int, size: CGFloat, centered: Bool) -> some View {
         LyricsWindow(state: state, before: before, after: after,
                      currentFont: .system(size: size, weight: .heavy),
-                     otherFont: .system(size: max(13, size * 0.6), weight: .semibold),
+                     otherFont: .system(size: max(11, size * 0.6), weight: .semibold),
                      minScale: 0.85, centered: centered, wrapCurrentFully: true)
     }
 
-    /// If nothing fits: current line only, up to 4 lines, shrinking as much as needed.
-    private func lastResort(centered: Bool) -> some View {
-        LyricsWindow(state: state, before: 0, after: 0,
-                     currentFont: .system(size: 20, weight: .heavy),
-                     otherFont: .system(size: 13, weight: .semibold),
-                     currentLineLimit: 4, minScale: 0.4, centered: centered)
+    /// If nothing fits: same lines, current line capped and shrunk as much as needed.
+    private func lastResort(before: Int = 0, after: Int = 0, centered: Bool) -> some View {
+        LyricsWindow(state: state, before: before, after: after,
+                     currentFont: .system(size: 18, weight: .heavy),
+                     otherFont: .system(size: 12, weight: .semibold),
+                     currentLineLimit: after == 0 && before == 0 ? 4 : 2, minScale: 0.4, centered: centered)
     }
 
     var body: some View {
@@ -86,36 +86,40 @@ struct LyricsActivityView: View {
         case .small:
             // CarPlay / Watch: big, glanceable. Read-only on purpose (no buttons while driving).
             // iOS decides the card's size; the layout is picked in Settings → CarPlay.
-            // Each layout lists fallbacks from roomiest to most compact. ViewThatFits uses the
-            // first one where the whole current line fits *without* being cut off; long lines
-            // (Thai has no spaces to break on and taller letters) step down automatically.
+            // The chosen layout always keeps its lines. Each one lists font sizes from biggest
+            // to smallest, and ViewThatFits uses the first where the whole current line fits
+            // *without* being cut off; long lines (e.g. Thai, which has no spaces to break on
+            // and taller letters) get smaller text instead of losing the other lines.
             Group {
                 switch state.carLayout {
                 case "single":
                     ViewThatFits(in: .vertical) {
                         car(after: 0, size: 38, centered: false)
-                        car(after: 0, size: 30, centered: false)
-                        car(after: 0, size: 24, centered: false)
+                        car(after: 0, size: 32, centered: false)
+                        car(after: 0, size: 27, centered: false)
+                        car(after: 0, size: 23, centered: false)
+                        car(after: 0, size: 20, centered: false)
                         lastResort(centered: false)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 case "next":
                     ViewThatFits(in: .vertical) {
                         car(after: 1, size: 30, centered: false)
-                        car(after: 1, size: 24, centered: false)
-                        car(after: 0, size: 28, centered: false)
-                        car(after: 0, size: 22, centered: false)
-                        lastResort(centered: false)
+                        car(after: 1, size: 26, centered: false)
+                        car(after: 1, size: 22, centered: false)
+                        car(after: 1, size: 19, centered: false)
+                        car(after: 1, size: 17, centered: false)
+                        lastResort(after: 1, centered: false)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 default:
                     // Previous (dim) / current (big) / next (dim), centered, fading at the edges.
                     ViewThatFits(in: .vertical) {
                         car(before: 1, after: 1, size: 24, centered: true)
-                        car(after: 1, size: 24, centered: true)
-                        car(after: 0, size: 26, centered: true)
-                        car(after: 0, size: 21, centered: true)
-                        lastResort(centered: true)
+                        car(before: 1, after: 1, size: 21, centered: true)
+                        car(before: 1, after: 1, size: 18, centered: true)
+                        car(before: 1, after: 1, size: 16, centered: true)
+                        lastResort(before: 1, after: 1, centered: true)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .mask {
@@ -153,8 +157,8 @@ struct LyricsActivityView: View {
                     .foregroundStyle(state.accent.color)
                 }
                 LyricsWindow(state: state,
-                             before: state.carLayout == "three" ? 1 : 0,
-                             after: state.carLayout == "single" ? 0 : 1,
+                             before: state.linesBefore,
+                             after: state.linesAfter,
                              currentFont: .system(size: state.carLayout == "single" ? 24 : 20, weight: .bold),
                              otherFont: .system(size: 15, weight: .semibold),
                              currentLineLimit: state.carLayout == "single" ? 3 : 2)
@@ -242,4 +246,11 @@ struct ArtBackdrop: View {
                         .init(id: "a#4", text: "Open your eyes")],
                 currentID: "a#2", trackTitle: "Bohemian Rhapsody", artist: "Queen", isPlaying: true,
                 artFile: nil, background: RGB(r: 0.25, g: 0.08, b: 0.1), accent: RGB(r: 1, g: 0.4, b: 0.45))
+}
+
+/// The Lyrics layout setting (Settings → Lyrics layout), shared by every surface:
+/// lock screen, Dynamic Island, CarPlay (and the same rule in the Lyrics widget).
+extension LyricsState {
+    var linesBefore: Int { carLayout == "three" ? 1 : 0 }
+    var linesAfter: Int { carLayout == "single" ? 0 : 1 }
 }

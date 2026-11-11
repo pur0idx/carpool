@@ -68,6 +68,8 @@ final class LyricsEngine {
     var carLayout: CarLayout {
         didSet {
             UserDefaults.standard.set(carLayout.rawValue, forKey: "carLayout")
+            log("Lyrics layout changed to: \(carLayout.title)")
+            liveActivity.invalidate()
             tick()
             scheduleWidgetUpdate()
         }
@@ -151,6 +153,7 @@ final class LyricsEngine {
 
     /// Called whenever the app comes to the screen.
     func appBecameActive() {
+        restartActivityIfAppWasUpdated()
         run()
         if carModeOn && (activityNeedsRestart || !liveActivity.isRunning) {
             restartActivity()
@@ -179,6 +182,25 @@ final class LyricsEngine {
         activityNeedsRestart = false
         keeper.stop()
         await liveActivity.stop()
+    }
+
+    /// A Live Activity that was started by an older build keeps being drawn with that build's
+    /// code (so new layouts or fixes don't show up on CarPlay). After installing a new build,
+    /// restart it once so it picks up the current code.
+    private func restartActivityIfAppWasUpdated() {
+        guard let exe = Bundle.main.executableURL,
+              let built = (try? exe.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+        else { return }
+        let buildID = String(Int(built.timeIntervalSince1970))
+        let key = "lastBuildID"
+        guard UserDefaults.standard.string(forKey: key) != buildID else { return }
+        UserDefaults.standard.set(buildID, forKey: key)
+        guard carModeOn else { return }
+        log("App was updated: restarting the Live Activity so it uses the new version")
+        Task {
+            await liveActivity.stop()
+            startCarMode()
+        }
     }
 
     private func restartActivity() {

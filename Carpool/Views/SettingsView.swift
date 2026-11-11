@@ -109,7 +109,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Lyrics layout")
                 } footer: {
-                    Text("Used on the lock screen, CarPlay and the Lyrics widget. Fewer lines means bigger text on CarPlay, where iOS decides the card's size.")
+                    Text("Used on the lock screen, Dynamic Island, CarPlay and the Lyrics widget. The app itself always shows the full lyrics. Fewer lines means bigger text on CarPlay, where iOS decides the card's size.")
                 }
 
                 Section("Automatic start in the car") {
